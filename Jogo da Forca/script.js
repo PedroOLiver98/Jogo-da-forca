@@ -1,125 +1,89 @@
-let tamanhoMatriz = 20;
-let qtdePalavras = 12;
-let listaPalavras = [];
-let matrizLetras = Array(tamanhoMatriz).fill().map(() => Array(tamanhoMatriz).fill(' '));
-let lista = [];
+let palavraEscolhida = '';
+let resposta = [];
+let letra = null;
+let vida = 6;
+let letrasUsadas = [];
 
-function listaHTML(sentido) {
-    switch (sentido) {
-        case 1: return 'horizontal';
-        case tamanhoMatriz: return 'vertical';
-        case tamanhoMatriz - 1: return 'diagonal Esquerda';
-        case tamanhoMatriz + 1: return 'diagonal Direita';
-        default: throw new Error('sentido inválido');
+// Função para iniciar o jogo
+function iniciarJogo(palavra) {
+    palavra = palavra.toLowerCase(); // Normaliza a palavra para minúsculas
+    let t = palavra.length; // tamanho da palavra
+    resposta = [];
+    vida = 6;
+    letrasUsadas = [];
+
+    // Montar caixa vazia
+    for (let i = 0; i < t; i++) {
+        resposta[i] = "_";  // Vai criar o campo de jogo
     }
-}
 
-async function inserirPalavra() {
-    const url = "https://api.dicionario-aberto.net/random";
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Response status: ${response.status}`);
-        }
-        let json = await response.json();
-        let palavra = (json.word.length < tamanhoMatriz) && json.word;
-        if (!palavra) return null; // Se não há uma palavra válida, retorne null
-        
-        let inverso = Math.random() >= 0.5;
-        let sentidos = [1, tamanhoMatriz, tamanhoMatriz - 1, tamanhoMatriz + 1];
-        let sentido = sentidos[Math.floor(Math.random() * sentidos.length)];
-        let inicio = posicaoInicial(palavra, sentido);
-        let meuSentido = listaHTML(sentido);
-        lista.push({ palavra, meuSentido, inicio });
+    alert(`Bem-vindo!\nA palavra sorteada tem ${t} letras`);
 
-        if (inverso) {
-            palavra = palavra.split("").reverse().join("");
-        }
-
-        return { palavra, inverso, sentido, inicio };
-    } catch (error) {
-        console.error(error.message);
-    }
-}
-
-function posicaoInicial(palavra, sentido) {
-    const tamanhoPalavra = palavra.length;
-    let inicio;
+    // Iniciar loop do jogo
     do {
-        inicio = Math.floor(Math.random() * (tamanhoMatriz * tamanhoMatriz));
-    } while (!verificarEspaco(palavra, inicio, sentido));
-    return inicio;
-}
+        // Perguntar se o usuário quer adivinhar a palavra completa
+        let querAdivinhar = confirm("Você quer tentar adivinhar a palavra completa?");
+        if (querAdivinhar) {
+            let palpite = prompt("Digite o seu palpite para a palavra completa:").toLowerCase();
+            if (palpite === palavra) {
+                alert("Parabéns, você adivinhou a palavra corretamente!");
+                resposta = palavra.split('').map(letra => letra.toUpperCase());
+                vida = 0; // Termina o jogo
+            } else {
+                alert("Palpite errado! Você perdeu uma vida.");
+                vida--;
+            }
+        } else {
+            letra = prompt(`Informe uma letra, você tem ${vida} vidas`).toLowerCase(); // Normaliza a letra para minúsculas
 
-function verificarEspaco(palavra, inicio, sentido) {
-    const tamanhoPalavra = palavra.length;
-    let x = Math.floor(inicio / tamanhoMatriz);
-    let y = inicio % tamanhoMatriz;
-    for (let i = 0; i < tamanhoPalavra; i++) {
-        if (sentido === 1) {  // horizontal
-            if (y + i >= tamanhoMatriz || matrizLetras[x][y + i] !== ' ' && matrizLetras[x][y + i] !== palavra[i]) return false;
-        } else if (sentido === tamanhoMatriz) { // vertical
-            if (x + i >= tamanhoMatriz || matrizLetras[x + i][y] !== ' ' && matrizLetras[x + i][y] !== palavra[i]) return false;
-        } else if (sentido === tamanhoMatriz - 1) { // diagonal Esquerda
-            if (x + i >= tamanhoMatriz || y - i < 0 || matrizLetras[x + i][y - i] !== ' ' && matrizLetras[x + i][y - i] !== palavra[i]) return false;
-        } else if (sentido === tamanhoMatriz + 1) { // diagonal Direita
-            if (x + i >= tamanhoMatriz || y + i >= tamanhoMatriz || matrizLetras[x + i][y + i] !== ' ' && matrizLetras[x + i][y + i] !== palavra[i]) return false;
-        }
-    }
-    return true;
-}
+            if (letrasUsadas.includes(letra)) {
+                alert('Essa letra já foi utilizada');
+                continue;
+            }
 
-async function bancoPalavras() {
-    let i = 0;
-    while (i < qtdePalavras) {
-        let palavraData = await inserirPalavra();
-        if (palavraData) {
-            listaPalavras.push(palavraData);
-            document.body.querySelector('ol').innerHTML += `<li>${palavraData.palavra}</li>`;
-            i++;
-        }
-    }
-    return listaPalavras;
-}
+            letrasUsadas.push(letra);
 
-async function tratarColisoes() {
-    await bancoPalavras();
-    for (let i = 0; i < listaPalavras.length; i++) {
-        let { palavra, inverso, sentido, inicio } = listaPalavras[i];
-        let x = Math.floor(inicio / tamanhoMatriz);
-        let y = inicio % tamanhoMatriz;
+            let acertou = false;
 
-        for (let j = 0; j < palavra.length; j++) {
-            if (sentido === 1) { // horizontal
-                matrizLetras[x][y + j] = palavra[j];
-            } else if (sentido === tamanhoMatriz) { // vertical
-                matrizLetras[x + j][y] = palavra[j];
-            } else if (sentido === tamanhoMatriz - 1) { // diagonal Esquerda
-                matrizLetras[x + j][y - j] = palavra[j];
-            } else if (sentido === tamanhoMatriz + 1) { // diagonal Direita
-                matrizLetras[x + j][y + j] = palavra[j];
+            for (let j = 0; j < t; j++) {
+                if (letra === palavra[j]) {
+                    resposta[j] = letra.toUpperCase();
+                    acertou = true;
+                }
+            }
+
+            if (!acertou) {
+                vida--;
             }
         }
-    }
-}
 
-async function Main() {
-    await tratarColisoes();
-    try {
-        const tblElement = document.createElement('table');
-        for (let i = 0; i < tamanhoMatriz; i++) {
-            const trElement = document.createElement('tr');
-            for (let j = 0; j < tamanhoMatriz; j++) {
-                const tdElement = document.createElement('td');
-                tdElement.textContent = matrizLetras[i][j];
-                trElement.appendChild(tdElement);
-            }
-            tblElement.appendChild(trElement);
+        if (vida === 0 && resposta.includes("_")) {
+            alert(`Você perdeu o jogo!!! A palavra era: ${palavra.toUpperCase()}`);
         }
-        document.body.appendChild(tblElement);
-    } catch (error) {
-        console.error(error.message);
-    }
+
+        if (!resposta.includes("_")) {
+            alert("Parabéns, você conseguiu vencer o jogo!!!");
+            vida = 0;
+        }
+
+        alert(resposta.join(" "));
+    } while (vida > 0);
+
+    window.location.reload(true);
 }
 
-Main();
+// Função para buscar palavra aleatória de uma API
+function buscarPalavraAleatoria() {
+    fetch('https://api.dicionario-aberto.net/random')
+        .then(response => response.json())
+        .then(data => {
+            console.log('Resposta da API:', data); // Log para depuração
+            // Supondo que a palavra esteja no campo `word` da resposta
+            palavraEscolhida = data.word; // Ajuste conforme a estrutura exata da resposta
+            iniciarJogo(palavraEscolhida);
+        })
+        .catch(error => console.error('Erro ao buscar palavra:', error));
+}
+
+// Chama a função para iniciar o jogo com uma palavra aleatória
+buscarPalavraAleatoria();
